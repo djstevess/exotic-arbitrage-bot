@@ -158,7 +158,7 @@ const TraderJoeRaydiumArbitrageBot = () => {
     }
   }, []);
 
-  // CORRECTED: Avalanche DEX price fetching with WORKING APIs
+  // Enhanced Avalanche DEX price fetching with WORKING APIs
   const fetchTraderJoePrice = useCallback(async (tokenA: string, tokenB: string): Promise<TokenPrice | null> => {
     try {
       // Known Avalanche token addresses and IDs
@@ -189,13 +189,39 @@ const TraderJoeRaydiumArbitrageBot = () => {
         }
       };
 
-      // Method 1: Try DexScreener API (correct format)
+      // Method 1: Try CoinGecko price comparison (most reliable)
+      try {
+        const coinIdA = avalancheTokens[tokenA as keyof typeof avalancheTokens]?.coinId;
+        const coinIdB = avalancheTokens[tokenB as keyof typeof avalancheTokens]?.coinId;
+        
+        if (coinIdA && coinIdB) {
+          const coinGeckoUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${coinIdA},${coinIdB}&vs_currencies=usd`;
+          const data = await makeAPICall(coinGeckoUrl);
+          
+          if (data && data[coinIdA] && data[coinIdB]) {
+            const priceA = data[coinIdA].usd;
+            const priceB = data[coinIdB].usd;
+            const rate = priceA / priceB;
+            
+            return {
+              symbol: `${tokenA}/${tokenB}`,
+              price: rate,
+              liquidity: 8000,
+              volume24h: 25000,
+              source: 'coingecko-avalanche'
+            };
+          }
+        }
+      } catch (error) {
+        console.warn('CoinGecko price comparison failed:', error);
+      }
+
+      // Method 2: Try DexScreener API  
       try {
         const tokenAddressA = avalancheTokens[tokenA as keyof typeof avalancheTokens]?.address;
-        const tokenAddressB = avalancheTokens[tokenB as keyof typeof avalancheTokens]?.address;
         
         if (tokenAddressA) {
-          const dexScreenerUrl = `${API_CONFIG.traderjoe.priceAPI}/tokens/v1/avalanche/${tokenAddressA}`;
+          const dexScreenerUrl = `https://api.dexscreener.com/tokens/v1/avalanche/${tokenAddressA}`;
           const data = await makeAPICall(dexScreenerUrl);
           
           if (data && data.pairs && data.pairs.length > 0) {
@@ -213,34 +239,7 @@ const TraderJoeRaydiumArbitrageBot = () => {
         console.warn('DexScreener API failed:', error);
       }
 
-      // Method 2: Try CoinGecko price comparison (WORKING!)
-      try {
-        const coinIdA = avalancheTokens[tokenA as keyof typeof avalancheTokens]?.coinId;
-        const coinIdB = avalancheTokens[tokenB as keyof typeof avalancheTokens]?.coinId;
-        
-        if (coinIdA && coinIdB) {
-          const coinGeckoUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${coinIdA},${coinIdB}&vs_currencies=usd`;
-          const data = await makeAPICall(coinGeckoUrl);
-          
-          if (data && data[coinIdA] && data[coinIdB]) {
-            const priceA = data[coinIdA].usd;
-            const priceB = data[coinIdB].usd;
-            const rate = priceA / priceB;
-            
-            return {
-              symbol: `${tokenA}/${tokenB}`,
-              price: rate,
-              liquidity: 8000, // Estimated for major tokens
-              volume24h: 25000,
-              source: 'coingecko-avalanche'
-            };
-          }
-        }
-      } catch (error) {
-        console.warn('CoinGecko API failed:', error);
-      }
-
-      // Method 3: Try CoinGecko by contract address (WORKING!)
+      // Method 3: Try CoinGecko by contract address
       try {
         const tokenAddressA = avalancheTokens[tokenA as keyof typeof avalancheTokens]?.address;
         
@@ -262,14 +261,27 @@ const TraderJoeRaydiumArbitrageBot = () => {
         console.warn('CoinGecko contract API failed:', error);
       }
 
-      // Method 4: Fallback to reliable price estimation
-      return await fetchFallbackPrice(tokenA, tokenB, 'avalanche');
+      // Method 4: Generate reasonable fallback
+      const basePrice = {
+        'AVAX': 35, 'JOE': 0.5, 'USDC.e': 1, 'USDT': 1, 'PNG': 0.15, 'WAVAX': 35
+      };
+
+      const priceA = basePrice[tokenA as keyof typeof basePrice] || 1;
+      const priceB = basePrice[tokenB as keyof typeof basePrice] || 1;
+      
+      return {
+        symbol: `${tokenA}/${tokenB}`,
+        price: priceA / priceB,
+        liquidity: 4000,
+        volume24h: 12000,
+        source: 'avalanche-estimated'
+      };
       
     } catch (error) {
-      console.error(`All Avalanche price methods failed for ${tokenA}/${tokenB}:`, error);
+      console.error(`All Avalanche methods failed for ${tokenA}/${tokenB}:`, error);
       return null;
     }
-  }, [makeAPICall, fetchFallbackPrice]);
+  }, [makeAPICall]);
 
       // Try DexScreener API for Avalanche
       const tokenAddressA = avalancheTokens[tokenA as keyof typeof avalancheTokens] || tokenA;
