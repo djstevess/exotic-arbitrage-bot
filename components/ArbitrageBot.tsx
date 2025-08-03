@@ -58,10 +58,10 @@ const TraderJoeRaydiumArbitrageBot = () => {
   const [connectedExchanges, setConnectedExchanges] = useState<Set<string>>(new Set());
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [settings, setSettings] = useState<Settings>({
-    minProfitThreshold: Number(process.env.NEXT_PUBLIC_MIN_PROFIT_THRESHOLD) || 0.10, // Balanced for both chains
+    minProfitThreshold: Number(process.env.NEXT_PUBLIC_MIN_PROFIT_THRESHOLD) || 0.10,
     minLiquidity: Number(process.env.NEXT_PUBLIC_MIN_LIQUIDITY) || 2000,
-    updateInterval: Number(process.env.NEXT_PUBLIC_UPDATE_INTERVAL) || 7000, // Balanced speed
-    enabledExchanges: ["traderjoe", "raydium"], // Only these two
+    updateInterval: Number(process.env.NEXT_PUBLIC_UPDATE_INTERVAL) || 7000,
+    enabledExchanges: ["traderjoe", "raydium"],
     focusedPairs: [
       // Avalanche (TraderJoe) Native Tokens
       "AVAX-JOE-USDC.e",
@@ -122,7 +122,7 @@ const TraderJoeRaydiumArbitrageBot = () => {
       "USDC-USDT-DAI",
       "USDC.e-USDT-FRAX"
     ],
-    maxSlippage: 1.2 // Slightly higher for exotic pairs
+    maxSlippage: 1.2
   });
   const [analytics, setAnalytics] = useState<Analytics>({
     totalOpportunities: 0,
@@ -139,10 +139,10 @@ const TraderJoeRaydiumArbitrageBot = () => {
       chain: "Avalanche",
       apiUrl: "https://api.traderjoexyz.com/priceusd",
       priceUrl: "https://api.traderjoexyz.com/priceusd",
-      fee: 0.3, // 0.3% trading fee
+      fee: 0.3,
       color: "bg-gradient-to-r from-red-600 to-orange-600",
       minLiquidity: 2500,
-      blockTime: 2000, // ~2s on Avalanche
+      blockTime: 2000,
       gasToken: "AVAX"
     },
     raydium: {
@@ -150,10 +150,10 @@ const TraderJoeRaydiumArbitrageBot = () => {
       chain: "Solana",
       apiUrl: "https://api.raydium.io/v2/main/pairs",
       priceUrl: "https://api.raydium.io/v2/main/price", 
-      fee: 0.25, // 0.25% trading fee
+      fee: 0.25,
       color: "bg-gradient-to-r from-purple-600 to-blue-600",
       minLiquidity: 2000,
-      blockTime: 400, // ~400ms on Solana
+      blockTime: 400,
       gasToken: "SOL"
     }
   };
@@ -164,103 +164,93 @@ const TraderJoeRaydiumArbitrageBot = () => {
     if (!config) return null;
 
     try {
-      // Simulate API delays based on chain characteristics
       const chainDelays = {
-        Avalanche: Math.random() * 300 + 150, // TraderJoe
-        Solana: Math.random() * 200 + 80,     // Raydium
+        Avalanche: Math.random() * 300 + 150,
+        Solana: Math.random() * 200 + 80,
       };
       
       await new Promise(resolve => setTimeout(resolve, chainDelays[config.chain as keyof typeof chainDelays] || 300));
       
-      // Comprehensive token pricing for both ecosystems
       const tokenPrices = {
-        // Base stablecoins
         'USDC': 1.0,
-        'USDC.e': 1.0, // Avalanche bridged USDC
+        'USDC.e': 1.0,
         'USDT': 1.001 + Math.random() * 0.003,
         'DAI': 0.998 + Math.random() * 0.004,
         'FRAX': 0.997 + Math.random() * 0.005,
         
         // Avalanche Ecosystem
-        'AVAX': 32 + Math.random() * 18, // $32-50
-        'JOE': 0.35 + Math.random() * 0.25, // $0.35-0.6
-        'PNG': 0.12 + Math.random() * 0.08, // $0.12-0.2 (Pangolin)
-        'QI': 0.018 + Math.random() * 0.012, // $0.018-0.03 (Benqi)
-        'XAVA': 0.85 + Math.random() * 0.6, // $0.85-1.45 (Avalaunch)
-        'GMX': 48 + Math.random() * 22, // $48-70 (GMX on Avalanche)
-        'GLP': 0.95 + Math.random() * 0.1, // $0.95-1.05 (GLP)
-        'CRAFT': 0.45 + Math.random() * 0.35, // $0.45-0.8 (CraftEconomy)
-        'LOST': 0.025 + Math.random() * 0.02, // $0.025-0.045 (LostWorlds)
-        'SAVAX': 31 + Math.random() * 17, // $31-48 (Staked AVAX)
+        'AVAX': 32 + Math.random() * 18,
+        'JOE': 0.35 + Math.random() * 0.25,
+        'PNG': 0.12 + Math.random() * 0.08,
+        'QI': 0.018 + Math.random() * 0.012,
+        'XAVA': 0.85 + Math.random() * 0.6,
+        'GMX': 48 + Math.random() * 22,
+        'GLP': 0.95 + Math.random() * 0.1,
+        'CRAFT': 0.45 + Math.random() * 0.35,
+        'LOST': 0.025 + Math.random() * 0.02,
+        'SAVAX': 31 + Math.random() * 17,
         
         // Solana Ecosystem  
-        'SOL': 95 + Math.random() * 45, // $95-140
-        'RAY': 1.95 + Math.random() * 1.3, // $1.95-3.25
-        'SRM': 0.42 + Math.random() * 0.28, // $0.42-0.7 (Serum)
-        'ORCA': 2.8 + Math.random() * 1.9, // $2.8-4.7
-        'MNGO': 0.085 + Math.random() * 0.065, // $0.085-0.15 (Mango Markets)
-        'FIDA': 0.52 + Math.random() * 0.38, // $0.52-0.9 (Bonfida)
-        'ATLAS': 0.0085 + Math.random() * 0.0075, // $0.0085-0.016 (Star Atlas)
-        'POLIS': 0.48 + Math.random() * 0.37, // $0.48-0.85 (Star Atlas DAO)
-        'GENE': 18 + Math.random() * 14, // $18-32 (Genopets)
-        'MSOL': 92 + Math.random() * 43, // $92-135 (Marinade SOL)
-        'JSOL': 90 + Math.random() * 41, // $90-131 (Jito SOL)
-        'BONK': 0.0000095 + Math.random() * 0.0000085, // Very small unit
-        'SAMO': 0.022 + Math.random() * 0.028, // $0.022-0.05
+        'SOL': 95 + Math.random() * 45,
+        'RAY': 1.95 + Math.random() * 1.3,
+        'SRM': 0.42 + Math.random() * 0.28,
+        'ORCA': 2.8 + Math.random() * 1.9,
+        'MNGO': 0.085 + Math.random() * 0.065,
+        'FIDA': 0.52 + Math.random() * 0.38,
+        'ATLAS': 0.0085 + Math.random() * 0.0075,
+        'POLIS': 0.48 + Math.random() * 0.37,
+        'GENE': 18 + Math.random() * 14,
+        'MSOL': 92 + Math.random() * 43,
+        'JSOL': 90 + Math.random() * 41,
+        'BONK': 0.0000095 + Math.random() * 0.0000085,
+        'SAMO': 0.022 + Math.random() * 0.028,
       };
       
-      // Get token prices
       const priceA = tokenPrices[tokenA as keyof typeof tokenPrices] || (0.5 + Math.random() * 8);
       const priceB = tokenPrices[tokenB as keyof typeof tokenPrices] || (0.5 + Math.random() * 8);
       
-      // Calculate theoretical rate
       const theoreticalRate = priceA / priceB;
       
-      // Chain-specific market inefficiencies
-      let inefficiencyRange = 0.008; // Base 0.8%
+      let inefficiencyRange = 0.008;
       
       if (exchange === 'traderjoe') {
-        // Avalanche inefficiencies
         if (tokenA.includes('CRAFT') || tokenB.includes('CRAFT') || 
             tokenA.includes('LOST') || tokenB.includes('LOST')) {
-          inefficiencyRange = 0.025; // 2.5% for gaming tokens
+          inefficiencyRange = 0.025;
         } else if (tokenA.includes('SAVAX') || tokenB.includes('SAVAX')) {
-          inefficiencyRange = 0.015; // 1.5% for liquid staking
+          inefficiencyRange = 0.015;
         } else {
-          inefficiencyRange = 0.012; // 1.2% base for Avalanche
+          inefficiencyRange = 0.012;
         }
       } else if (exchange === 'raydium') {
-        // Solana inefficiencies
         if (tokenA.includes('BONK') || tokenB.includes('BONK') || 
             tokenA.includes('SAMO') || tokenB.includes('SAMO')) {
-          inefficiencyRange = 0.030; // 3.0% for memecoins
+          inefficiencyRange = 0.030;
         } else if (tokenA.includes('ATLAS') || tokenB.includes('ATLAS') ||
                    tokenA.includes('GENE') || tokenB.includes('GENE')) {
-          inefficiencyRange = 0.022; // 2.2% for gaming tokens
+          inefficiencyRange = 0.022;
         } else if (tokenA.includes('MSOL') || tokenB.includes('MSOL') ||
                    tokenA.includes('JSOL') || tokenB.includes('JSOL')) {
-          inefficiencyRange = 0.018; // 1.8% for liquid staking
+          inefficiencyRange = 0.018;
         } else {
-          inefficiencyRange = 0.015; // 1.5% base for Solana
+          inefficiencyRange = 0.015;
         }
       }
       
       const inefficiency = (Math.random() - 0.5) * inefficiencyRange;
       const finalPrice = theoreticalRate * (1 + inefficiency);
       
-      // Exchange-specific liquidity patterns
       let baseLiquidity = config.minLiquidity * (1 + Math.random() * 5);
       
-      // Adjust liquidity based on token type and exchange
       if (exchange === 'traderjoe') {
         if (tokenA === 'AVAX' || tokenB === 'AVAX' || tokenA === 'JOE' || tokenB === 'JOE') {
-          baseLiquidity *= 2.5; // Higher liquidity for major Avalanche pairs
+          baseLiquidity *= 2.5;
         }
       } else if (exchange === 'raydium') {
         if (tokenA === 'SOL' || tokenB === 'SOL' || tokenA === 'RAY' || tokenB === 'RAY') {
-          baseLiquidity *= 3; // Higher liquidity for major Solana pairs
+          baseLiquidity *= 3;
         } else if (tokenA.includes('BONK') || tokenB.includes('BONK')) {
-          baseLiquidity *= 0.6; // Lower liquidity for memecoins
+          baseLiquidity *= 0.6;
         }
       }
       
@@ -283,7 +273,6 @@ const TraderJoeRaydiumArbitrageBot = () => {
     if (!config) return null;
 
     try {
-      // Get prices for all three pairs
       const priceData1To3 = await fetchExchangePrice(exchange, pair1, pair3);
       const priceData2To3 = await fetchExchangePrice(exchange, pair2, pair3);
       const priceData1To2 = await fetchExchangePrice(exchange, pair1, pair2);
@@ -296,7 +285,6 @@ const TraderJoeRaydiumArbitrageBot = () => {
       const price2To3 = priceData2To3.price;
       const price1To2 = priceData1To2.price;
       
-      // Simulate triangular arbitrage starting with 1000 units of pair3 (base currency)
       const startingAmount = 1000;
       
       // Route 1: pair3 → pair1 → pair2 → pair3
@@ -325,19 +313,17 @@ const TraderJoeRaydiumArbitrageBot = () => {
       const profit2 = step3_route2 - startingAmount;
       const profitPercent2 = (profit2 / startingAmount) * 100;
       
-      // Choose the better route
       const bestProfitPercent = Math.max(profitPercent1, profitPercent2);
       const bestRoute = profitPercent1 > profitPercent2 ? 
         `${pair3} → ${pair1} → ${pair2} → ${pair3}` : 
         `${pair3} → ${pair2} → ${pair1} → ${pair3}`;
       
-      // Chain-specific transaction costs
       const gasCosts = {
-        Avalanche: Math.random() * 0.8 + 0.2, // $0.2-1.0 on Avalanche
-        Solana: Math.random() * 0.008 + 0.002, // $0.002-0.01 on Solana
+        Avalanche: Math.random() * 0.8 + 0.2,
+        Solana: Math.random() * 0.008 + 0.002,
       };
       
-      const totalGasCost = (gasCosts[config.chain as keyof typeof gasCosts] || 0.5) * 3; // 3 transactions
+      const totalGasCost = (gasCosts[config.chain as keyof typeof gasCosts] || 0.5) * 3;
       
       const minLiquidity = Math.min(
         priceData1To3.liquidity || 0,
@@ -345,21 +331,18 @@ const TraderJoeRaydiumArbitrageBot = () => {
         priceData1To2.liquidity || 0
       );
       
-      // Calculate market inefficiency
       const impliedCrossRate = price1To3 / price2To3;
       const actualCrossRate = price1To2;
       const inefficiencyPercent = actualCrossRate > 0 ? 
         ((Math.abs(impliedCrossRate - actualCrossRate) / actualCrossRate) * 100) : 0;
 
-      // Account for gas costs in profit calculation
       const gasImpactPercent = (totalGasCost / startingAmount) * 100;
       const netProfitPercent = bestProfitPercent - gasImpactPercent;
 
-      // Only return viable opportunities
       const isViable = netProfitPercent > (settings.minProfitThreshold || 0) && 
                       minLiquidity > (settings.minLiquidity || 0) &&
                       isFinite(netProfitPercent) && 
-                      Math.abs(netProfitPercent) < 150; // Sanity check
+                      Math.abs(netProfitPercent) < 150;
 
       return {
         id: Date.now() + Math.random(),
@@ -373,7 +356,7 @@ const TraderJoeRaydiumArbitrageBot = () => {
           pair2: priceData2To3.liquidity || 0,
           pair3: priceData1To2.liquidity || 0
         },
-        fees: config.fee * 3, // Total fees for 3 trades
+        fees: config.fee * 3,
         viable: isViable,
         priceData: {
           token1Price: price1To3,
@@ -398,15 +381,13 @@ const TraderJoeRaydiumArbitrageBot = () => {
     const newOpportunities: Opportunity[] = [];
 
     const scanPromises = settings.enabledExchanges.map(async (exchange) => {
-      // Only set to connecting if not already connected
       if (!connectedExchanges.has(exchange)) {
         setConnectionStatus(prev => ({ ...prev, [exchange]: "connecting" }));
         
         try {
           const config = exchangeConfigs[exchange as keyof typeof exchangeConfigs];
           
-          // Initial connection delay based on chain
-          const delay = config?.chain === 'Solana' ? 1200 : 1800; // Faster for Solana
+          const delay = config?.chain === 'Solana' ? 1200 : 1800;
           await new Promise(resolve => setTimeout(resolve, delay));
           
           setConnectionStatus(prev => ({ ...prev, [exchange]: "connected" }));
@@ -953,261 +934,4 @@ const TraderJoeRaydiumArbitrageBot = () => {
   );
 };
 
-export default TraderJoeRaydiumArbitrageBot;-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                    ${(opportunity.gasEstimate || 0).toFixed(4)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600">
-                    {opportunity.timestamp.toLocaleTimeString()}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      opportunity.viable 
-                        ? "bg-green-100 text-green-800" 
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {opportunity.viable ? "⚡ RAYDIUM VIABLE" : "❌ Below Threshold"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {opportunities.length === 0 && (
-            <div className="text-center py-12">
-              <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-600">
-                {isRunning ? "Scanning Raydium for arbitrage opportunities..." : "Start Raydium monitoring to discover high-speed arbitrage opportunities"}
-              </p>
-              {isRunning && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Connecting to Raydium AMM on Solana. Fast execution with ultra-low fees...
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {analytics.topPairs.length > 0 && (
-        <div className="mt-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <TrendingUp className="mr-2 h-5 w-5 text-green-500" />
-              Most Profitable Raydium Pairs
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {analytics.topPairs.map((pair, index) => (
-                <div key={pair.pair} className="flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
-                  <div>
-                    <span className="font-medium text-gray-900">{pair.pair}</span>
-                    <div className="text-sm text-gray-600">{pair.count || 0} Raydium opportunities</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-green-600">{(pair.avgProfit || 0).toFixed(3)}%</span>
-                    <div className="text-xs text-green-500">avg profit</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default RaydiumArbitrageBot;500">
-                      after {(opportunity.fees || 0).toFixed(2)}% fees + gas
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-700 max-w-32">
-                    {opportunity.route || 'N/A'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <span className="font-medium">
-                      ${Math.min(
-                        opportunity.liquidity?.pair1 || 0, 
-                        opportunity.liquidity?.pair2 || 0, 
-                        opportunity.liquidity?.pair3 || 0
-                      ).toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono">
-                    {(opportunity.priceData?.inefficiency || 0).toFixed(3)}%
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                    ${(opportunity.gasEstimate || 0).toFixed(4)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600">
-                    {opportunity.timestamp.toLocaleTimeString()}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      opportunity.viable 
-                        ? "bg-green-100 text-green-800" 
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {opportunity.viable ? "⚡ RAYDIUM VIABLE" : "❌ Below Threshold"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {opportunities.length === 0 && (
-            <div className="text-center py-12">
-              <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-600">
-                {isRunning ? "Scanning Raydium for arbitrage opportunities..." : "Start Raydium monitoring to discover high-speed arbitrage opportunities"}
-              </p>
-              {isRunning && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Connecting to Raydium AMM on Solana. Fast execution with ultra-low fees...
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {analytics.topPairs.length > 0 && (
-        <div className="mt-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <TrendingUp className="mr-2 h-5 w-5 text-green-500" />
-              Most Profitable Raydium Pairs
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {analytics.topPairs.map((pair, index) => (
-                <div key={pair.pair} className="flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
-                  <div>
-                    <span className="font-medium text-gray-900">{pair.pair}</span>
-                    <div className="text-sm text-gray-600">{pair.count || 0} Raydium opportunities</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-green-600">{(pair.avgProfit || 0).toFixed(3)}%</span>
-                    <div className="text-xs text-green-500">avg profit</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default RaydiumArbitrageBot;500">
-                      after {(opportunity.fees || 0).toFixed(2)}% fees + gas
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-700 max-w-32">
-                    {opportunity.route || 'N/A'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <span className="font-medium">
-                      ${Math.min(
-                        opportunity.liquidity?.pair1 || 0, 
-                        opportunity.liquidity?.pair2 || 0, 
-                        opportunity.liquidity?.pair3 || 0
-                      ).toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono">
-                    {(opportunity.priceData?.inefficiency || 0).toFixed(3)}%
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                    ${(opportunity.gasEstimate || 0).toFixed(3)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600">
-                    {opportunity.timestamp.toLocaleTimeString()}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      opportunity.viable 
-                        ? "bg-green-100 text-green-800" 
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {opportunity.viable ? "🚀 EXOTIC VIABLE" : "❌ Below Threshold"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {opportunities.length === 0 && (
-            <div className="text-center py-12">
-              <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-600">
-                {isRunning ? "Scanning exotic chains for arbitrage opportunities..." : "Start exotic monitoring to discover high-yield opportunities"}
-              </p>
-              {isRunning && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Connecting to niche DEXs across multiple chains. This may take 20-45 seconds...
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        {analytics.topPairs.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <TrendingUp className="mr-2 h-5 w-5 text-green-500" />
-              Most Profitable Exotic Pairs
-            </h2>
-            <div className="space-y-3">
-              {analytics.topPairs.map((pair, index) => (
-                <div key={pair.pair} className="flex items-center justify-between bg-green-50 rounded-lg p-3">
-                  <div>
-                    <span className="font-medium text-green-900">{pair.pair}</span>
-                    <div className="text-sm text-green-700">{pair.count || 0} exotic opportunities</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-green-600">{(pair.avgProfit || 0).toFixed(3)}%</span>
-                    <div className="text-xs text-green-500">avg exotic profit</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {analytics.topExchanges.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <DollarSign className="mr-2 h-5 w-5 text-blue-500" />
-              Best Performing Exotic Chains
-            </h2>
-            <div className="space-y-3">
-              {analytics.topExchanges.map((exchange, index) => (
-                <div key={exchange.exchange} className="flex items-center justify-between bg-blue-50 rounded-lg p-3">
-                  <div>
-                    <span className="font-medium text-blue-900">
-                      {exchangeConfigs[exchange.exchange as keyof typeof exchangeConfigs]?.name || exchange.exchange}
-                    </span>
-                    <div className="text-sm text-blue-700">
-                      {exchange.count || 0} exotic opportunities on {exchangeConfigs[exchange.exchange as keyof typeof exchangeConfigs]?.chain}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-blue-600">{(exchange.avgProfit || 0).toFixed(3)}%</span>
-                    <div className="text-xs text-blue-500">avg profit</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default ExoticArbitrageBot;
+export default TraderJoeRaydiumArbitrageBot;
